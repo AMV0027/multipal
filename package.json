@@ -10,7 +10,9 @@
     "dev:controller": "pnpm --filter @multipal/controller-web dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "assets:fetch": "node scripts/fetch-and-organize-assets.mjs && node scripts/organize-assets.mjs",
+    "assets:organize": "node scripts/organize-assets.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

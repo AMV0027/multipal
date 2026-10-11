@@ -7,15 +7,8 @@ import {
   JoinRoomResponse,
 } from '@multipal/shared-types';
 import { VirtualJoystick } from './components/VirtualJoystick';
-import {
-  Wifi,
-  WifiOff,
-  Gamepad2,
-  CheckCircle2,
-  Circle,
-  AlertCircle,
-  Smartphone,
-} from 'lucide-react';
+import { Button, Card, Badge, Input } from './components/ui/8bit';
+import { Gamepad2, AlertCircle } from 'lucide-react';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
@@ -29,12 +22,10 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
-  // Active controller input state
   const inputVectorRef = useRef<[number, number]>([0, 0]);
   const buttonsMaskRef = useRef<number>(0);
   const seqRef = useRef<number>(0);
 
-  // Extract room code from URL (e.g. /join/K9X2)
   useEffect(() => {
     const pathParts = window.location.pathname.split('/');
     const joinIndex = pathParts.indexOf('join');
@@ -46,7 +37,6 @@ export default function App() {
     if (savedName) setNickname(savedName);
   }, []);
 
-  // Initialize Socket.IO connection
   useEffect(() => {
     const s = io(SERVER_URL, {
       transports: ['websocket', 'polling'],
@@ -57,7 +47,6 @@ export default function App() {
       setConnected(true);
       setErrorMsg(null);
 
-      // Check if we have an existing sessionToken to resume
       const token = sessionStorage.getItem('multipal_session_token');
       const code = sessionStorage.getItem('multipal_room_code');
       if (token && code) {
@@ -75,9 +64,7 @@ export default function App() {
       }
     });
 
-    s.on('disconnect', () => {
-      setConnected(false);
-    });
+    s.on('disconnect', () => setConnected(false));
 
     s.on('room:updated', (updatedRoom: Room) => {
       setRoom(updatedRoom);
@@ -92,7 +79,7 @@ export default function App() {
       sessionStorage.removeItem('multipal_room_code');
       setPlayer(null);
       setRoom(null);
-      setErrorMsg(`Room closed: ${reason}`);
+      setErrorMsg(`ROOM CLOSED: ${reason}`);
     });
 
     setSocket(s);
@@ -102,7 +89,7 @@ export default function App() {
     };
   }, []);
 
-  // 30Hz high-frequency input dispatch loop
+  // 30Hz input loop
   useEffect(() => {
     if (!socket || !player || !connected) return;
 
@@ -115,7 +102,7 @@ export default function App() {
         buttons: buttonsMaskRef.current,
       };
       socket.emit('player:input', payload);
-    }, 1000 / 30); // 30Hz
+    }, 1000 / 30);
 
     return () => clearInterval(interval);
   }, [socket, player, connected]);
@@ -125,7 +112,7 @@ export default function App() {
     if (!socket || !roomCode.trim()) return;
 
     const cleanCode = roomCode.trim().toUpperCase();
-    const cleanNick = nickname.trim() || 'Player';
+    const cleanNick = nickname.trim().toUpperCase() || 'PLAYER';
 
     localStorage.setItem('multipal_nickname', cleanNick);
     setErrorMsg(null);
@@ -143,7 +130,7 @@ export default function App() {
           sessionStorage.setItem('multipal_session_token', res.player.sessionToken);
           sessionStorage.setItem('multipal_room_code', cleanCode);
         } else {
-          setErrorMsg(res.error || 'Failed to join room');
+          setErrorMsg(res.error || 'FAILED TO JOIN ROOM');
         }
       }
     );
@@ -172,90 +159,85 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0B0F19] text-slate-100 overflow-hidden font-sans select-none touch-none">
+    <div className="flex flex-col h-screen w-screen bg-[#0D0E15] text-slate-100 overflow-hidden font-retro select-none touch-none">
       {!player ? (
-        /* Join Room Form */
-        <div className="flex-1 flex flex-col justify-center px-6 max-w-sm mx-auto w-full">
-          <div className="p-6 rounded-2xl border border-slate-800 bg-[#111827] shadow-2xl space-y-5">
+        /* 8-bit Join Room Form */
+        <div className="flex-1 flex flex-col justify-center px-4 max-w-sm mx-auto w-full">
+          <Card className="space-y-4">
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-500/20 text-blue-400 mx-auto flex items-center justify-center mb-2">
-                <Smartphone className="w-6 h-6" />
+              <div className="w-12 h-12 bg-[#2563EB] border-4 border-black shadow-pixel text-white mx-auto flex items-center justify-center mb-2">
+                <Gamepad2 className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-bold tracking-tight">Join Party Room</h2>
-              <p className="text-xs text-slate-400">Your phone is your game controller</p>
+              <h2 className="text-sm font-black text-[#FACC15] tracking-widest">
+                JOIN GAME
+              </h2>
+              <p className="text-[9px] text-slate-400">8-BIT CONTROLLER</p>
             </div>
 
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center space-x-2">
+              <div className="p-2.5 bg-[#DC2626] border-2 border-black text-white text-[9px] flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            <form onSubmit={handleJoin} className="space-y-4">
+            <form onSubmit={handleJoin} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Room Code
+                <label className="block text-[9px] text-slate-400 uppercase tracking-wider mb-1">
+                  ROOM CODE
                 </label>
-                <input
+                <Input
                   type="text"
                   maxLength={4}
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. K9X2"
-                  className="w-full text-center text-2xl font-mono font-bold tracking-widest py-3 px-4 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 uppercase"
+                  placeholder="K9X2"
+                  className="w-full text-center text-xl font-black text-[#FACC15] tracking-widest"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                  Your Nickname
+                <label className="block text-[9px] text-slate-400 uppercase tracking-wider mb-1">
+                  NICKNAME
                 </label>
-                <input
+                <Input
                   type="text"
-                  maxLength={15}
+                  maxLength={12}
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
-                  placeholder="Enter nickname"
-                  className="w-full py-3 px-4 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+                  placeholder="HERO"
+                  className="w-full text-center text-xs"
                   required
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
+                variant="warning"
+                size="md"
                 disabled={!connected || !roomCode.trim()}
-                className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:pointer-events-none font-semibold text-white shadow-lg shadow-blue-600/30 transition text-sm flex items-center justify-center space-x-2"
+                className="w-full text-xs font-black"
               >
-                <Gamepad2 className="w-4 h-4" />
-                <span>Join Game</span>
-              </button>
+                ★ JOIN GAME ★
+              </Button>
             </form>
 
-            <div className="flex items-center justify-center space-x-2 text-xs text-slate-500 pt-2 border-t border-slate-800">
-              {connected ? (
-                <>
-                  <Wifi className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Ready to connect</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="w-3.5 h-3.5 text-rose-400" />
-                  <span>Connecting to game server...</span>
-                </>
-              )}
+            <div className="text-center pt-2 border-t-2 border-black">
+              <Badge variant={connected ? 'green' : 'red'}>
+                {connected ? '● READY' : '○ CONNECTING...'}
+              </Badge>
             </div>
-          </div>
+          </Card>
         </div>
       ) : (
-        /* Connected Controller Gamepad View */
-        <div className="flex-1 flex flex-col justify-between p-4 overflow-hidden">
-          {/* Controller Header */}
-          <header className="flex items-center justify-between pb-3 border-b border-slate-800/80">
-            <div className="flex items-center space-x-2.5">
+        /* Connected 8-Bit Arcade Gamepad */
+        <div className="flex-1 flex flex-col justify-between p-3 overflow-hidden">
+          {/* Header */}
+          <header className="flex items-center justify-between pb-2 border-b-4 border-black">
+            <div className="flex items-center space-x-2">
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs text-white shadow"
+                className="w-7 h-7 border-2 border-black shadow-pixel-sm flex items-center justify-center font-black text-[10px] text-white"
                 style={{
                   backgroundColor:
                     room?.slots[player.slotIndex]?.color.primary || '#3B82F6',
@@ -264,62 +246,52 @@ export default function App() {
                 P{player.slotIndex + 1}
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-100 leading-tight">
+                <p className="text-[11px] font-black text-[#FACC15] leading-tight">
                   {player.nickname}
                 </p>
-                <p className="text-[11px] text-slate-400 font-mono">
-                  Room: {room?.code}
+                <p className="text-[8px] text-slate-400">
+                  ROOM: {room?.code}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <button
+            <div className="flex items-center space-x-2">
+              <Button
+                variant={isReady ? 'success' : 'secondary'}
+                size="sm"
                 onClick={toggleReady}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition ${
-                  isReady
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : 'bg-slate-800 text-slate-400 border border-slate-700'
-                }`}
               >
-                {isReady ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <Circle className="w-3.5 h-3.5" />
-                )}
-                <span>{isReady ? 'Ready' : 'Not Ready'}</span>
-              </button>
+                {isReady ? 'READY' : 'NOT READY'}
+              </Button>
 
-              <div className="flex items-center space-x-1 text-[11px] text-slate-400">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    connected ? 'bg-emerald-400' : 'bg-rose-400 animate-ping'
-                  }`}
-                />
-              </div>
+              <span
+                className={`w-2.5 h-2.5 border border-black ${
+                  connected ? 'bg-emerald-400' : 'bg-rose-400'
+                }`}
+              />
             </div>
           </header>
 
-          {/* Gamepad Controls Area */}
-          <div className="flex-1 flex items-center justify-between px-2 sm:px-8 py-4 gap-4">
-            {/* Left Hand: Virtual Joystick */}
+          {/* Gamepad Controls */}
+          <div className="flex-1 flex items-center justify-between px-2 sm:px-6 py-2 gap-4">
+            {/* Left Hand: 8-Bit Virtual Joystick */}
             <div className="flex flex-col items-center">
               <VirtualJoystick
-                size={160}
-                knobSize={64}
+                size={150}
+                knobSize={58}
                 onChange={handleJoystickChange}
                 color={
                   room?.slots[player.slotIndex]?.color.primary || '#3B82F6'
                 }
               />
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest mt-2">
-                Movement
+              <span className="text-[8px] text-slate-500 uppercase tracking-widest mt-2">
+                MOVE
               </span>
             </div>
 
-            {/* Right Hand: Action Buttons */}
-            <div className="flex items-center space-x-5">
-              {/* Button B: Secondary Action / Jump / Pulse */}
+            {/* Right Hand: 8-Bit Arcade Buttons */}
+            <div className="flex items-center space-x-4">
+              {/* Button B: Pulse / Jump */}
               <div className="flex flex-col items-center space-y-1">
                 <button
                   onPointerDown={(e) => {
@@ -334,14 +306,14 @@ export default function App() {
                     e.preventDefault();
                     handleButtonPress(2, false);
                   }}
-                  className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-slate-800 active:bg-amber-600 border-2 border-slate-600 active:border-amber-400 active:scale-95 shadow-xl flex items-center justify-center font-black text-xl text-amber-400 active:text-white transition-transform touch-none"
+                  className="w-18 h-18 sm:w-20 sm:h-20 bg-[#FACC15] active:bg-[#CA8A04] border-4 border-black shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-2xl text-black transition-transform select-none touch-none cursor-pointer"
                 >
                   B
                 </button>
-                <span className="text-[10px] text-slate-500 uppercase">Action B</span>
+                <span className="text-[8px] text-slate-500 uppercase">PULSE</span>
               </div>
 
-              {/* Button A: Primary Action / Dash / Fire */}
+              {/* Button A: Action / Dash / Fire */}
               <div className="flex flex-col items-center space-y-1">
                 <button
                   onPointerDown={(e) => {
@@ -356,18 +328,18 @@ export default function App() {
                     e.preventDefault();
                     handleButtonPress(1, false);
                   }}
-                  className="w-20 h-20 sm:w-22 sm:h-22 rounded-full bg-blue-600 active:bg-blue-500 border-2 border-blue-400 active:scale-95 shadow-2xl flex items-center justify-center font-black text-2xl text-white transition-transform touch-none"
+                  className="w-20 h-20 sm:w-22 sm:h-22 bg-[#EF4444] active:bg-[#B91C1C] border-4 border-black shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-3xl text-white transition-transform select-none touch-none cursor-pointer"
                 >
                   A
                 </button>
-                <span className="text-[10px] text-slate-500 uppercase">Action A</span>
+                <span className="text-[8px] text-slate-500 uppercase">ACTION</span>
               </div>
             </div>
           </div>
 
-          {/* Footer Bar */}
-          <footer className="text-center text-[10px] text-slate-600 py-1">
-            Keep phone awake • MultiPal Controller v1.0
+          {/* Footer */}
+          <footer className="text-center text-[8px] text-slate-600 py-0.5">
+            MULTIP<span className="text-[#FACC15]">AL</span> 8-BIT CONTROLLER
           </footer>
         </div>
       )}

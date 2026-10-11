@@ -1,0 +1,379 @@
+{
+  "$schema": "MultiPal Asset Manifest v1.0.0",
+  "common": {
+    "fonts": [
+      {
+        "key": "font-press-start",
+        "path": "/assets/common/fonts/PressStart2P-Regular.ttf",
+        "type": "webfont"
+      },
+      {
+        "key": "font-silkscreen",
+        "path": "/assets/common/fonts/Silkscreen-Regular.ttf",
+        "type": "webfont"
+      }
+    ],
+    "images": [
+      {
+        "key": "ui-preview",
+        "path": "/assets/common/ui/ui_preview.png"
+      }
+    ],
+    "spritesheets": [
+      {
+        "key": "ui-tilesheet",
+        "path": "/assets/common/ui/ui_tilesheet.png",
+        "frameWidth": 16,
+        "frameHeight": 16
+      }
+    ],
+    "audio": [
+      {
+        "key": "common-click",
+        "path": "/assets/common/audio/click.ogg"
+      },
+      {
+        "key": "common-select",
+        "path": "/assets/common/audio/select.ogg"
+      },
+      {
+        "key": "common-confirm",
+        "path": "/assets/common/audio/confirm.ogg"
+      },
+      {
+        "key": "common-back",
+        "path": "/assets/common/audio/back.ogg"
+      },
+      {
+        "key": "common-countdown_3",
+        "path": "/assets/common/audio/countdown_3.ogg"
+      },
+      {
+        "key": "common-countdown_2",
+        "path": "/assets/common/audio/countdown_2.ogg"
+      },
+      {
+        "key": "common-countdown_1",
+        "path": "/assets/common/audio/countdown_1.ogg"
+      },
+      {
+        "key": "common-countdown_go",
+        "path": "/assets/common/audio/countdown_go.ogg"
+      },
+      {
+        "key": "common-victory_jingle",
+        "path": "/assets/common/audio/victory_jingle.ogg"
+      },
+      {
+        "key": "common-game_over_jingle",
+        "path": "/assets/common/audio/game_over_jingle.ogg"
+      },
+      {
+        "key": "common-winner_voice",
+        "path": "/assets/common/audio/winner_voice.ogg"
+      },
+      {
+        "key": "common-game_over_voice",
+        "path": "/assets/common/audio/game_over_voice.ogg"
+      }
+    ]
+  },
+  "games": {
+    "zombie-survival": {
+      "images": [
+        {
+          "key": "zombie-survivor-blue",
+          "path": "/assets/games/zombie-survival/sprites/survivor_blue_gun.png"
+        },
+        {
+          "key": "zombie-survivor-red",
+          "path": "/assets/games/zombie-survival/sprites/survivor_red_gun.png"
+        },
+        {
+          "key": "zombie-survivor-green",
+          "path": "/assets/games/zombie-survival/sprites/survivor_green_gun.png"
+        },
+        {
+          "key": "zombie-survivor-yellow",
+          "path": "/assets/games/zombie-survival/sprites/survivor_yellow_gun.png"
+        },
+        {
+          "key": "zombie-walker",
+          "path": "/assets/games/zombie-survival/sprites/zombie_walker.png"
+        },
+        {
+          "key": "zombie-runner",
+          "path": "/assets/games/zombie-survival/sprites/zombie_runner.png"
+        },
+        {
+          "key": "zombie-brute",
+          "path": "/assets/games/zombie-survival/sprites/zombie_brute.png"
+        },
+        {
+          "key": "zombie-spitter",
+          "path": "/assets/games/zombie-survival/sprites/zombie_spitter.png"
+        },
+        {
+          "key": "zombie-boss",
+          "path": "/assets/games/zombie-survival/sprites/zombie_boss.png"
+        },
+        {
+          "key": "weapon-gun",
+          "path": "/assets/games/zombie-survival/sprites/weapon_gun.png"
+        },
+        {
+          "key": "weapon-machine",
+          "path": "/assets/games/zombie-survival/sprites/weapon_machine.png"
+        },
+        {
+          "key": "abandoned-street-tilesheet",
+          "path": "/assets/games/zombie-survival/tilesets/abandoned_street_tilesheet.png"
+        }
+      ],
+      "spritesheets": [
+        {
+          "key": "zombie-characters-sheet",
+          "path": "/assets/games/zombie-survival/sprites/characters_spritesheet.png",
+          "frameWidth": 50,
+          "frameHeight": 43
+        },
+        {
+          "key": "zombie-tiles-sheet",
+          "path": "/assets/games/zombie-survival/tilesets/spritesheet_tiles.png",
+          "frameWidth": 64,
+          "frameHeight": 64
+        }
+      ],
+      "audio": [
+        {
+          "key": "zombie-gunshot",
+          "path": "/assets/games/zombie-survival/audio/gunshot.ogg"
+        },
+        {
+          "key": "zombie-machinegun",
+          "path": "/assets/games/zombie-survival/audio/machinegun.ogg"
+        },
+        {
+          "key": "zombie-shotgun",
+          "path": "/assets/games/zombie-survival/audio/shotgun.ogg"
+        },
+        {
+          "key": "zombie-reload",
+          "path": "/assets/games/zombie-survival/audio/reload.ogg"
+        },
+        {
+          "key": "zombie-zombie_groan",
+          "path": "/assets/games/zombie-survival/audio/zombie_groan.ogg"
+        },
+        {
+          "key": "zombie-zombie_spit",
+          "path": "/assets/games/zombie-survival/audio/zombie_spit.ogg"
+        },
+        {
+          "key": "zombie-zombie_hit",
+          "path": "/assets/games/zombie-survival/audio/zombie_hit.ogg"
+        },
+        {
+          "key": "zombie-upgrade_pickup",
+          "path": "/assets/games/zombie-survival/audio/upgrade_pickup.ogg"
+        },
+        {
+          "key": "zombie-wave_start",
+          "path": "/assets/games/zombie-survival/audio/wave_start.ogg"
+        },
+        {
+          "key": "zombie-wave_clear",
+          "path": "/assets/games/zombie-survival/audio/wave_clear.ogg"
+        },
+        {
+          "key": "zombie-player_hurt",
+          "path": "/assets/games/zombie-survival/audio/player_hurt.ogg"
+        }
+      ]
+    },
+    "platform-fighter": {
+      "images": [
+        {
+          "key": "fighter-training-platforms",
+          "path": "/assets/games/platform-fighter/arenas/training_platforms_tilemap.png"
+        },
+        {
+          "key": "fighter-sky-bg",
+          "path": "/assets/games/platform-fighter/arenas/sky_parallax_background.png"
+        },
+        {
+          "key": "swift-idle",
+          "path": "/assets/games/platform-fighter/sprites/swift/adventurer_idle.png"
+        },
+        {
+          "key": "heavy-idle",
+          "path": "/assets/games/platform-fighter/sprites/heavy/soldier_idle.png"
+        },
+        {
+          "key": "balanced-idle",
+          "path": "/assets/games/platform-fighter/sprites/balanced/player_idle.png"
+        },
+        {
+          "key": "ranger-idle",
+          "path": "/assets/games/platform-fighter/sprites/ranger/zombie_idle.png"
+        }
+      ],
+      "spritesheets": [
+        {
+          "key": "swift-sheet",
+          "path": "/assets/games/platform-fighter/sprites/swift/swift_tilesheet.png",
+          "frameWidth": 80,
+          "frameHeight": 110
+        },
+        {
+          "key": "heavy-sheet",
+          "path": "/assets/games/platform-fighter/sprites/heavy/heavy_tilesheet.png",
+          "frameWidth": 80,
+          "frameHeight": 110
+        },
+        {
+          "key": "balanced-sheet",
+          "path": "/assets/games/platform-fighter/sprites/balanced/balanced_tilesheet.png",
+          "frameWidth": 80,
+          "frameHeight": 110
+        },
+        {
+          "key": "ranger-sheet",
+          "path": "/assets/games/platform-fighter/sprites/ranger/ranger_tilesheet.png",
+          "frameWidth": 80,
+          "frameHeight": 110
+        },
+        {
+          "key": "fighter-platform-tiles",
+          "path": "/assets/games/platform-fighter/arenas/training_platforms_tilemap.png",
+          "frameWidth": 18,
+          "frameHeight": 18
+        }
+      ],
+      "audio": [
+        {
+          "key": "fighter-slash_light",
+          "path": "/assets/games/platform-fighter/audio/slash_light.ogg"
+        },
+        {
+          "key": "fighter-impact_heavy",
+          "path": "/assets/games/platform-fighter/audio/impact_heavy.ogg"
+        },
+        {
+          "key": "fighter-whoosh_launch",
+          "path": "/assets/games/platform-fighter/audio/whoosh_launch.ogg"
+        },
+        {
+          "key": "fighter-jump",
+          "path": "/assets/games/platform-fighter/audio/jump.ogg"
+        },
+        {
+          "key": "fighter-double_jump",
+          "path": "/assets/games/platform-fighter/audio/double_jump.ogg"
+        },
+        {
+          "key": "fighter-ko_blast",
+          "path": "/assets/games/platform-fighter/audio/ko_blast.ogg"
+        },
+        {
+          "key": "fighter-announcer_ready",
+          "path": "/assets/games/platform-fighter/audio/announcer_ready.ogg"
+        },
+        {
+          "key": "fighter-announcer_fight",
+          "path": "/assets/games/platform-fighter/audio/announcer_fight.ogg"
+        },
+        {
+          "key": "fighter-announcer_ko",
+          "path": "/assets/games/platform-fighter/audio/announcer_ko.ogg"
+        },
+        {
+          "key": "fighter-announcer_sudden_death",
+          "path": "/assets/games/platform-fighter/audio/announcer_sudden_death.ogg"
+        },
+        {
+          "key": "fighter-announcer_winner",
+          "path": "/assets/games/platform-fighter/audio/announcer_winner.ogg"
+        }
+      ]
+    },
+    "racing": {
+      "images": [
+        {
+          "key": "racing-car-blue",
+          "path": "/assets/games/racing/vehicles/car_blue.png"
+        },
+        {
+          "key": "racing-car-red",
+          "path": "/assets/games/racing/vehicles/car_red.png"
+        },
+        {
+          "key": "racing-car-green",
+          "path": "/assets/games/racing/vehicles/car_green.png"
+        },
+        {
+          "key": "racing-car-yellow",
+          "path": "/assets/games/racing/vehicles/car_yellow.png"
+        },
+        {
+          "key": "sunset-circuit-tiles",
+          "path": "/assets/games/racing/tracks/sunset_circuit_tilesheet.png"
+        }
+      ],
+      "spritesheets": [
+        {
+          "key": "racing-vehicles-sheet",
+          "path": "/assets/games/racing/vehicles/spritesheet_vehicles.png",
+          "frameWidth": 128,
+          "frameHeight": 128
+        },
+        {
+          "key": "racing-track-sheet",
+          "path": "/assets/games/racing/tracks/sunset_circuit_tilesheet.png",
+          "frameWidth": 128,
+          "frameHeight": 128
+        },
+        {
+          "key": "racing-objects-sheet",
+          "path": "/assets/games/racing/tracks/spritesheet_objects.png",
+          "frameWidth": 128,
+          "frameHeight": 128
+        }
+      ],
+      "audio": [
+        {
+          "key": "racing-engine_loop",
+          "path": "/assets/games/racing/audio/engine_loop.ogg"
+        },
+        {
+          "key": "racing-engine_accel",
+          "path": "/assets/games/racing/audio/engine_accel.ogg"
+        },
+        {
+          "key": "racing-tire_screech",
+          "path": "/assets/games/racing/audio/tire_screech.ogg"
+        },
+        {
+          "key": "racing-car_crash",
+          "path": "/assets/games/racing/audio/car_crash.ogg"
+        },
+        {
+          "key": "racing-checkpoint_chime",
+          "path": "/assets/games/racing/audio/checkpoint_chime.ogg"
+        },
+        {
+          "key": "racing-lap_flag",
+          "path": "/assets/games/racing/audio/lap_flag.ogg"
+        },
+        {
+          "key": "racing-finish_horn",
+          "path": "/assets/games/racing/audio/finish_horn.ogg"
+        },
+        {
+          "key": "racing-finish_fanfare",
+          "path": "/assets/games/racing/audio/finish_fanfare.ogg"
+        }
+      ]
+    }
+  }
+}

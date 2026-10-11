@@ -1,14 +1,14 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 
 interface VirtualJoystickProps {
-  size?: number; // Outer base size in px (e.g. 150)
-  knobSize?: number; // Knob size in px (e.g. 64)
+  size?: number;
+  knobSize?: number;
   onChange: (vector: [number, number]) => void;
   color?: string;
 }
 
 export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
-  size = 150,
+  size = 160,
   knobSize = 64,
   onChange,
   color = '#3B82F6',
@@ -85,28 +85,32 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
         height: size,
         touchAction: 'none',
       }}
-      className="relative rounded-full bg-slate-900/90 border-2 border-slate-700/80 shadow-2xl flex items-center justify-center cursor-pointer select-none"
+      className="relative bg-[#181926] border-4 border-black shadow-pixel-lg flex items-center justify-center cursor-pointer select-none font-retro"
     >
-      {/* Inner Guide Crosshair */}
+      {/* 4 Direction Pixel Indicators */}
+      <span className="absolute top-1 text-[10px] text-slate-500 pointer-events-none">▲</span>
+      <span className="absolute bottom-1 text-[10px] text-slate-500 pointer-events-none">▼</span>
+      <span className="absolute left-1 text-[10px] text-slate-500 pointer-events-none">◀</span>
+      <span className="absolute right-1 text-[10px] text-slate-500 pointer-events-none">▶</span>
+
+      {/* Grid crosshair */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-        <div className="w-full h-px bg-slate-400" />
-        <div className="h-full w-px bg-slate-400 absolute" />
+        <div className="w-full h-1 bg-black" />
+        <div className="h-full w-1 bg-black absolute" />
       </div>
 
-      {/* Movable Knob */}
+      {/* Chunky 8-Bit Movable Knob */}
       <div
         style={{
           width: knobSize,
           height: knobSize,
           transform: `translate(${knobPosition.x}px, ${knobPosition.y}px)`,
-          borderColor: color,
+          backgroundColor: color,
         }}
-        className="rounded-full bg-gradient-to-br from-slate-700 to-slate-800 border-2 shadow-lg flex items-center justify-center transition-transform duration-75 pointer-events-none"
+        className="border-4 border-black shadow-pixel flex items-center justify-center transition-transform duration-75 pointer-events-none relative"
       >
-        <div
-          style={{ backgroundColor: color }}
-          className="w-4 h-4 rounded-full shadow-md opacity-80"
-        />
+        {/* Center pixel dot */}
+        <div className="w-3 h-3 bg-white border-2 border-black" />
       </div>
     </div>
   );

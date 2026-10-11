@@ -1,10 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   server: {
-    port: 5174,
-    host: true, // Listen on 0.0.0.0 so phones can connect
+    port: 5201,
+    strictPort: true,
+    host: true,
   },
 });

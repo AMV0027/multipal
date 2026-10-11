@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/games/test-arena-engine.ts","./src/realtime/socket-gateway.ts","./src/rooms/room-manager.ts"],"version":"5.9.3"}

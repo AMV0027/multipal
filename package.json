@@ -1,0 +1,19 @@
+{
+  "name": "multipal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser-based multiplayer party gaming platform with mobile phone controllers",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @multipal/server --filter @multipal/platform-web --filter @multipal/controller-web dev",
+    "dev:server": "pnpm --filter @multipal/server dev",
+    "dev:platform": "pnpm --filter @multipal/platform-web dev",
+    "dev:controller": "pnpm --filter @multipal/controller-web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
+  }
+}

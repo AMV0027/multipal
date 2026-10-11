@@ -1,0 +1,193 @@
+import { Server as SocketIOServer, Socket } from 'socket.io';
+import { RoomManager } from '../rooms/room-manager';
+import { TestArenaEngine } from '../games/test-arena-engine';
+import { GameTicker } from '@multipal/game-runtime';
+import {
+  ControllerInputPayload,
+  GameId,
+  JoinRoomPayload,
+  Room,
+} from '@multipal/shared-types';
+
+interface ActiveRoomSession {
+  room: Room;
+  testEngine: TestArenaEngine;
+  ticker: GameTicker;
+}
+
+export class SocketGateway {
+  private activeSessions = new Map<string, ActiveRoomSession>();
+
+  constructor(
+    private io: SocketIOServer,
+    private roomManager: RoomManager
+  ) {
+    this.setupSocketHandlers();
+  }
+
+  private setupSocketHandlers(): void {
+    this.io.on('connection', (socket: Socket) => {
+      // 1. Host creates a room
+      socket.on('room:create', (ack) => {
+        try {
+          const room = this.roomManager.createRoom(socket.id);
+          const socketRoomName = `room:${room.id}`;
+          socket.join(socketRoomName);
+
+          // Setup test arena engine for immediate live input verification
+          const testEngine = new TestArenaEngine({
+            roomId: room.id,
+            onSnapshot: () => {},
+            onEvent: () => {},
+            onGameEnd: () => {},
+          });
+
+          // Run tick loop at 30Hz
+          const ticker = new GameTicker(30, (dt) => {
+            const { snapshot } = testEngine.tick(dt);
+            this.io.to(socketRoomName).emit('game:state_snapshot', snapshot);
+          });
+          ticker.start();
+
+          this.activeSessions.set(room.id, { room, testEngine, ticker });
+
+          if (typeof ack === 'function') {
+            ack({ ok: true, room });
+          }
+        } catch (err: any) {
+          if (typeof ack === 'function') {
+            ack({ ok: false, error: err.message || 'Failed to create room' });
+          }
+        }
+      });
+
+      // 2. Mobile player joins a room
+      socket.on('room:join', (payload: JoinRoomPayload, ack) => {
+        try {
+          if (!payload || !payload.code) {
+            if (typeof ack === 'function') {
+              ack({ ok: false, error: 'Room code is required' });
+            }
+            return;
+          }
+
+          const result = this.roomManager.joinRoom(
+            payload.code,
+            payload.nickname || '',
+            socket.id,
+            payload.avatarId || 'default',
+            payload.sessionToken
+          );
+
+          if (!result.ok || !result.player || !result.room) {
+            if (typeof ack === 'function') {
+              ack({ ok: false, error: result.error || 'Failed to join room' });
+            }
+            return;
+          }
+
+          const { room, player } = result;
+          const socketRoomName = `room:${room.id}`;
+          socket.join(socketRoomName);
+
+          // Add player to active test engine
+          const session = this.activeSessions.get(room.id);
+          if (session) {
+            session.testEngine.addPlayer(player);
+          }
+
+          // Broadcast room update to everyone (host and players)
+          this.io.to(socketRoomName).emit('room:updated', room);
+          this.io.to(socketRoomName).emit('player:joined', player);
+
+          if (typeof ack === 'function') {
+            ack({
+              ok: true,
+              player,
+              room,
+            });
+          }
+        } catch (err: any) {
+          if (typeof ack === 'function') {
+            ack({ ok: false, error: err.message || 'Failed to join room' });
+          }
+        }
+      });
+
+      // 3. Player ready toggle
+      socket.on('player:ready', (data: { ready: boolean }) => {
+        const result = this.roomManager.setPlayerReady(socket.id, !!data?.ready);
+        if (result) {
+          this.io.to(`room:${result.room.id}`).emit('room:updated', result.room);
+        }
+      });
+
+      // 4. Controller inputs streamed from mobile phone
+      socket.on('player:input', (input: ControllerInputPayload) => {
+        const data = this.roomManager.getPlayerBySocket(socket.id);
+        if (!data || !input) return;
+
+        const session = this.activeSessions.get(data.room.id);
+        if (session) {
+          session.testEngine.processInput(data.player.id, input);
+        }
+      });
+
+      // 5. Host selects game
+      socket.on('game:select', (data: { gameId: GameId }) => {
+        const room = this.roomManager.getRoomByHostSocket(socket.id);
+        if (!room) return;
+
+        this.roomManager.setSelectedGame(room.id, data.gameId);
+        this.io.to(`room:${room.id}`).emit('room:updated', room);
+      });
+
+      // 6. Host starts game
+      socket.on('game:start', () => {
+        const room = this.roomManager.getRoomByHostSocket(socket.id);
+        if (!room) return;
+
+        this.roomManager.setRoomStatus(room.id, 'STARTING');
+        this.io.to(`room:${room.id}`).emit('room:updated', room);
+        this.io.to(`room:${room.id}`).emit('game:starting', 3);
+
+        setTimeout(() => {
+          this.roomManager.setRoomStatus(room.id, 'PLAYING');
+          this.io.to(`room:${room.id}`).emit('room:updated', room);
+          this.io.to(`room:${room.id}`).emit('game:started', room.selectedGameId);
+        }, 3000);
+      });
+
+      // 7. Ping / diagnostic latency check
+      socket.on('ping:check', (clientTimestamp: number, ack) => {
+        if (typeof ack === 'function') {
+          ack(Date.now());
+        }
+      });
+
+      // 8. Disconnection handling
+      socket.on('disconnect', () => {
+        // A. Is host disconnecting?
+        const closedRoom = this.roomManager.removeHost(socket.id);
+        if (closedRoom) {
+          const session = this.activeSessions.get(closedRoom.id);
+          if (session) {
+            session.ticker.stop();
+            session.testEngine.destroy();
+            this.activeSessions.delete(closedRoom.id);
+          }
+          this.io.to(`room:${closedRoom.id}`).emit('room:closed', 'Host has disconnected.');
+          return;
+        }
+
+        // B. Is mobile player disconnecting?
+        const playerResult = this.roomManager.handlePlayerDisconnect(socket.id);
+        if (playerResult) {
+          const { room, player } = playerResult;
+          this.io.to(`room:${room.id}`).emit('player:disconnected', player.id);
+          this.io.to(`room:${room.id}`).emit('room:updated', room);
+        }
+      });
+    });
+  }
+}

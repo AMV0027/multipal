@@ -86,7 +86,7 @@ export class ZombieSurvivalEngine
         reviveProgress: 0,
         ammo: 150,
         inputVector: [0, 0],
-        aimVector: [1, 0],
+        aimVector: [0, 0],
         buttons: 0,
         lastInputSeq: 0,
         fireCooldown: 0,
@@ -228,9 +228,10 @@ export class ZombieSurvivalEngine
           p.x = Math.max(20, Math.min(this.ARENA_WIDTH - 20, p.x));
           p.y = Math.max(20, Math.min(this.ARENA_HEIGHT - 20, p.y));
 
-          // Weapon firing (Button A or aim magnitude > 0.5)
+          // Weapon firing (Explicit Button A or active stick deflection > 0.5)
           p.fireCooldown -= dt;
-          const isFiring = (p.buttons & ControllerButton.A) !== 0 || (p.aimVector && Math.hypot(p.aimVector[0], p.aimVector[1]) > 0.6);
+          const isStickAiming = p.aimVector && Math.hypot(p.aimVector[0], p.aimVector[1]) > 0.5;
+          const isFiring = (p.buttons & ControllerButton.A) !== 0 || isStickAiming;
           if (isFiring && p.fireCooldown <= 0 && p.ammo > 0) {
             p.fireCooldown = 0.15; // 6.6 shots per second
             p.ammo--;

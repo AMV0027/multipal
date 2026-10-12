@@ -61,6 +61,7 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const prevSnapshotRef = useRef<GameStateSnapshot | null>(null);
 
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   const controllerUrl = room
@@ -591,6 +592,111 @@ export default function App() {
       ctx.fillStyle = '#00E5FF';
       ctx.fillText(`ACTIVE PLAYERS: ${snap.entities?.length || 0}`, 20, 50);
     }
+
+    // Dynamic Sound Effects Triggering System across All 3 Games
+    const prev = prevSnapshotRef.current;
+    if (prev && prev.gameId === gameSnapshot.gameId) {
+      if (gameSnapshot.gameId === 'zombie-survival' && prev.gameId === 'zombie-survival') {
+        const currZ = gameSnapshot as ZombieSurvivalSnapshot;
+        const prevZ = prev as ZombieSurvivalSnapshot;
+
+        // Gunshots (new bullets fired)
+        if (currZ.bullets.length > prevZ.bullets.length) {
+          assetManager.playSound('gunshot', 0.4);
+        }
+        // Drops collected
+        if (currZ.drops.length < prevZ.drops.length) {
+          assetManager.playSound('upgrade_pickup', 0.5);
+        }
+        // Wave progression
+        if (currZ.wave > prevZ.wave) {
+          assetManager.playSound('wave_start', 0.6);
+        } else if (currZ.isWaveIntermission && !prevZ.isWaveIntermission) {
+          assetManager.playSound('wave_clear', 0.6);
+        }
+        // Player damage taken
+        const currHpSum = currZ.players.reduce((sum, p) => sum + p.hp, 0);
+        const prevHpSum = prevZ.players.reduce((sum, p) => sum + p.hp, 0);
+        if (currHpSum < prevHpSum) {
+          assetManager.playSound('player_hurt', 0.5);
+        }
+        // Zombie groan / spawns
+        if (currZ.zombies.length > prevZ.zombies.length && Math.random() < 0.4) {
+          assetManager.playSound('zombie_groan', 0.35);
+        }
+        // Game Over / Victory
+        if (currZ.isGameOver && !prevZ.isGameOver) {
+          assetManager.playSound('game_over', 0.7);
+        } else if (currZ.isVictory && !prevZ.isVictory) {
+          assetManager.playSound('victory', 0.7);
+        }
+      } else if (gameSnapshot.gameId === 'platform-fighter' && prev.gameId === 'platform-fighter') {
+        const currF = gameSnapshot as PlatformFighterSnapshot;
+        const prevF = prev as PlatformFighterSnapshot;
+
+        // Fighter attacks & hits
+        currF.players.forEach((p, idx) => {
+          const prevP = prevF.players[idx];
+          if (!prevP) return;
+
+          // Attack start
+          if (p.isAttacking && !prevP.isAttacking) {
+            if (p.attackType === 'heavy') {
+              assetManager.playSound('impact_heavy', 0.5);
+            } else {
+              assetManager.playSound('slash_light', 0.4);
+            }
+          }
+          // Jump take-off
+          if (!p.isGrounded && prevP.isGrounded && p.vy < 0) {
+            assetManager.playSound('jump', 0.35);
+          }
+          // KO / Stock lost
+          if (p.stocks < prevP.stocks) {
+            assetManager.playSound('ko_blast', 0.65);
+            assetManager.playSound('announcer_ko', 0.8);
+          }
+          // Launch velocity
+          if (Math.abs(p.vx) > 300 && Math.abs(prevP.vx) <= 300) {
+            assetManager.playSound('whoosh_launch', 0.5);
+          }
+        });
+
+        // Game Over announcer
+        if (currF.isGameOver && !prevF.isGameOver) {
+          assetManager.playSound('announcer_winner', 0.8);
+          assetManager.playSound('victory', 0.6);
+        }
+      } else if (gameSnapshot.gameId === 'racing' && prev.gameId === 'racing') {
+        const currR = gameSnapshot as RacingGameSnapshot;
+        const prevR = prev as RacingGameSnapshot;
+
+        currR.karts.forEach((k, idx) => {
+          const prevK = prevR.karts[idx];
+          if (!prevK) return;
+
+          // Checkpoint / Lap completed
+          if (k.currentLap > prevK.currentLap) {
+            assetManager.playSound('lap_flag', 0.6);
+          }
+          // Speed acceleration & screech
+          if (k.speed > 250 && Math.abs(k.angle - prevK.angle) > 0.08) {
+            assetManager.playSound('tire_screech', 0.25);
+          }
+          // Finished race
+          if (k.isFinished && !prevK.isFinished) {
+            assetManager.playSound('finish_horn', 0.7);
+            assetManager.playSound('finish_fanfare', 0.7);
+          }
+        });
+
+        if (currR.isRaceOver && !prevR.isRaceOver) {
+          assetManager.playSound('finish_fanfare', 0.8);
+        }
+      }
+    }
+
+    prevSnapshotRef.current = gameSnapshot;
   }, [gameSnapshot]);
 
   const handleCreateRoom = () => {
@@ -698,10 +804,17 @@ export default function App() {
     ? Object.values(room.players).filter((p) => p.connected).length
     : 0;
 
+  const allPlayersReady = room
+    ? connectedPlayersCount > 0 &&
+      Object.values(room.players)
+        .filter((p) => p.connected)
+        .every((p) => p.isReady)
+    : false;
+
   // Render Landing Page if no active room is hosted
   if (!room) {
     return (
-      <div className="min-h-screen w-full bg-[#09090F] text-[#F7F4E8] flex flex-col font-sans selection:bg-[#8B35FF] selection:text-white">
+      <div className="min-h-screen w-full bg-[#09090F] text-[#F7F4E8] flex flex-col font-sans selection:bg-[#8B35FF] selection:text-white overflow-y-auto">
         {/* Top Dark Arcade Navigation Header */}
         <header className="sticky top-0 z-50 h-16 border-b-4 border-[#29293A] px-6 flex items-center justify-between bg-[#11111B]/95 backdrop-blur shadow-pixel">
           <div className="flex items-center space-x-3">
@@ -874,230 +987,238 @@ export default function App() {
     );
   }
 
-  // Active Room Screen: Live Canvas & Authoritative Lobby
+  // Active Room Screen: Full-screen Game Arena with Left Corner HUD Overlay & Bottom Marquee
+  const connectedPlayers = room.slots
+    .map((slot) => {
+      const p = slot.playerId ? room.players[slot.playerId] : null;
+      return { slot, player: p, isConnected: slot.occupied && !!p && p.connected };
+    });
+
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#09090F] text-[#F7F4E8] overflow-hidden font-sans select-none">
-      {/* Dark Arcade Top Header Bar */}
-      <header className="h-16 border-b-4 border-[#29293A] px-6 flex items-center justify-between bg-[#11111B] shadow-pixel">
-        <div className="flex items-center space-x-3">
+    <div className="flex flex-col h-screen w-screen bg-[#09090F] text-[#F7F4E8] overflow-hidden font-sans select-none relative">
+      {/* Top Floating Mini-Nav */}
+      <header className="absolute top-0 left-0 right-0 z-30 h-12 px-4 flex items-center justify-between bg-[#11111B]/80 backdrop-blur-sm border-b-2 border-[#29293A]">
+        <div className="flex items-center space-x-2">
           <img
             src="/multipal_logo.png"
             alt="MultiPal Logo"
-            className="w-10 h-10 object-contain pixelated border-2 border-[#39394F] bg-[#09090F] p-0.5 shadow-pixel-sm"
+            className="w-7 h-7 object-contain pixelated border border-[#39394F] bg-[#09090F] p-0.5"
           />
-          <div className="px-2 py-0.5 bg-[#8B35FF] text-[#F7F4E8] border border-[#29293A] font-retro text-[10px] tracking-wider hidden sm:block">
-            8-BIT
-          </div>
-          <div>
-            <h1 className="text-sm font-black text-[#F7F4E8] font-retro tracking-widest">
-              MULTIP<span className="text-[#00E5FF]">AL</span>
-            </h1>
-            <p className="text-[10px] text-[#B7B6C9] font-medium">AUTHORITATIVE GAME ROOM</p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
+          <span className="text-xs font-black text-[#F7F4E8] font-retro tracking-widest">
+            MULTIP<span className="text-[#00E5FF]">AL</span>
+          </span>
           <Badge
             variant={connected ? 'default' : 'destructive'}
-            className={`text-[9px] font-retro ${connected ? 'bg-[#35E58A] text-[#09090F]' : 'bg-[#FF4268] text-white'}`}
+            className={`text-[8px] font-retro ml-2 ${connected ? 'bg-[#35E58A] text-[#09090F]' : 'bg-[#FF4268] text-white'}`}
           >
-            {connected ? '● ONLINE' : '○ OFFLINE'}
+            {connected ? '● LIVE' : '○ OFFLINE'}
           </Badge>
+        </div>
+
+        {/* Quick Game Switcher in Header */}
+        <div className="flex items-center space-x-1.5">
+          {[
+            { id: 'zombie-survival' as GameId, label: 'ZOMBIE 4P' },
+            { id: 'platform-fighter' as GameId, label: 'FIGHTER' },
+            { id: 'racing' as GameId, label: 'RACER 2X2' },
+            { id: 'test-arena' as GameId, label: 'ARENA' },
+          ].map((g) => {
+            const isSelected = room.selectedGameId === g.id;
+            return (
+              <Button
+                key={g.id}
+                variant={isSelected ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleGameSelect(g.id)}
+                className={`text-[8px] h-7 px-2 font-retro transition-all ${
+                  isSelected
+                    ? 'bg-[#8B35FF] text-[#F7F4E8] border border-[#00E5FF] shadow-pixel-sm'
+                    : 'bg-[#1A1A28]/80 text-[#B7B6C9] border-[#29293A] hover:bg-[#222235]'
+                }`}
+              >
+                {g.label}
+              </Button>
+            );
+          })}
+
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleStartGame}
+            disabled={connectedPlayersCount === 0 || room.status === 'PLAYING'}
+            className={`h-7 px-3 font-retro text-[8px] border shadow-pixel-sm ml-2 transition-all ${
+              room.status === 'PLAYING'
+                ? 'bg-[#1A1A28] text-[#77778D] border-[#29293A]'
+                : countdown !== null
+                ? 'bg-[#FFD400] text-[#09090F] border-[#FF6B00] animate-bounce'
+                : allPlayersReady
+                ? 'bg-[#35E58A] hover:bg-[#2bc473] text-[#09090F] border-[#09090F] animate-pulse shadow-[0_0_10px_#35E58A]'
+                : 'bg-[#8B35FF] hover:bg-[#7222E5] text-[#F7F4E8] border-[#00E5FF]'
+            }`}
+          >
+            {room.status === 'PLAYING' ? (
+              'IN PLAY'
+            ) : countdown !== null ? (
+              `STARTING ${countdown}s`
+            ) : allPlayersReady ? (
+              <span className="flex items-center gap-1 font-black">
+                <Play className="w-2.5 h-2.5" /> ALL READY! START
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Play className="w-2.5 h-2.5" /> START GAME
+              </span>
+            )}
+          </Button>
 
           <Button
             variant="secondary"
             size="sm"
             onClick={toggleFullscreen}
             title="Toggle Fullscreen"
-            className="bg-[#1A1A28] border border-[#29293A] text-[#F7F4E8] hover:bg-[#222235]"
+            className="h-7 w-7 p-0 bg-[#1A1A28] border border-[#29293A] text-[#F7F4E8] hover:bg-[#222235] ml-1"
           >
-            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
           </Button>
         </div>
       </header>
 
-      {/* Main Screen Content */}
-      <main className="flex-1 flex overflow-hidden p-6 gap-6 bg-[#09090F]">
-        {/* Left Column: Lobby Code, QR Code, Game Selector */}
-        <div className="w-80 flex flex-col space-y-4 shrink-0">
-          {/* Room Code Card */}
-          <Card className="p-4 bg-[#11111B] border-2 border-[#29293A] shadow-pixel space-y-3">
-            <CardHeader className="p-0 pb-1">
-              <CardTitle className="text-xs font-bold text-[#B7B6C9] uppercase tracking-wider font-retro">
-                ROOM CODE
-              </CardTitle>
-            </CardHeader>
-            <div className="flex items-center justify-between bg-[#1A1A28] border-2 border-[#39394F] p-3">
-              <span className="text-2xl font-black tracking-widest text-[#00E5FF] font-retro">
-                {room.code}
-              </span>
+      {/* Main Full-Screen Game Arena */}
+      <main className="flex-1 w-full h-full relative flex items-center justify-center bg-[#09090F] overflow-hidden pt-12 pb-14">
+        {/* Fullscreen Responsive Canvas */}
+        <canvas
+          ref={canvasRef}
+          width={800}
+          height={600}
+          className="w-full h-full object-contain pixelated"
+          style={{ imageRendering: 'pixelated' }}
+        />
+
+        {/* Compact Floating HUD Overlay (Top-Left Corner) */}
+        <div className="absolute top-16 left-4 z-20 flex flex-col space-y-2 pointer-events-auto">
+          <Card className="p-2.5 bg-[#11111B]/90 backdrop-blur-md border-2 border-[#29293A] shadow-pixel w-44 space-y-2">
+            {/* Header: Room Code + One-Click Copy */}
+            <div className="flex items-center justify-between bg-[#1A1A28] border border-[#39394F] px-2 py-1.5">
+              <div className="flex flex-col">
+                <span className="text-[7px] text-[#77778D] font-retro leading-none">ROOM</span>
+                <span className="text-base font-black tracking-widest text-[#00E5FF] font-retro">
+                  {room.code}
+                </span>
+              </div>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={handleCopyLink}
-                className="text-[9px] bg-[#222235] text-[#F7F4E8] border border-[#39394F]"
+                title="Copy Controller Link"
+                className="h-6 w-6 p-0 bg-[#222235] text-[#F7F4E8] border border-[#39394F] hover:bg-[#2e2e46]"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-[#35E58A]" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3 h-3 text-[#35E58A]" /> : <Copy className="w-3 h-3" />}
               </Button>
             </div>
-            <p className="text-[10px] text-[#77778D] break-all leading-tight">
-              {controllerUrl}
-            </p>
-          </Card>
 
-          {/* QR Code Card */}
-          <Card className="flex-1 flex flex-col items-center justify-center p-4 bg-[#11111B] border-2 border-[#29293A] shadow-pixel text-center space-y-3">
-            <p className="text-[10px] text-[#00E5FF] font-retro tracking-wider">
-              SCAN TO JOIN ON PHONE
-            </p>
-            <div className="p-3 bg-white border-4 border-[#09090F] shadow-pixel inline-block">
-              <QRCodeSVG
-                value={controllerUrl}
-                size={160}
-                level="M"
-                includeMargin={false}
-              />
-            </div>
-            <p className="text-[10px] text-[#B7B6C9]">
-              UP TO 4 PLAYERS • 0 DOWNLOADS REQUIRED
-            </p>
-          </Card>
-
-          {/* Game Selection Card */}
-          <Card className="p-4 bg-[#11111B] border-2 border-[#29293A] shadow-pixel space-y-3">
-            <CardHeader className="p-0 pb-1">
-              <CardTitle className="text-xs font-bold text-[#B7B6C9] uppercase tracking-wider font-retro">
-                SELECT GAME
-              </CardTitle>
-            </CardHeader>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'zombie-survival' as GameId, label: 'ZOMBIE 4P' },
-                { id: 'platform-fighter' as GameId, label: 'FIGHTER' },
-                { id: 'racing' as GameId, label: 'RACER 2X2' },
-                { id: 'test-arena' as GameId, label: 'TEST ARENA' },
-              ].map((g) => {
-                const isSelected = room.selectedGameId === g.id;
-                return (
-                  <Button
-                    key={g.id}
-                    variant={isSelected ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleGameSelect(g.id)}
-                    className={`text-[8px] font-retro ${
-                      isSelected
-                        ? 'bg-[#8B35FF] text-[#F7F4E8] border-2 border-[#00E5FF] shadow-pixel-purple'
-                        : 'bg-[#1A1A28] text-[#B7B6C9] border-[#29293A] hover:bg-[#222235]'
-                    }`}
-                  >
-                    {g.label}
-                  </Button>
-                );
-              })}
-            </div>
-
-            <Button
-              variant="default"
-              size="lg"
-              onClick={handleStartGame}
-              disabled={connectedPlayersCount === 0 || room.status === 'PLAYING'}
-              className="w-full mt-2 bg-[#8B35FF] hover:bg-[#7222E5] text-[#F7F4E8] font-retro text-xs border-2 border-[#09090F] shadow-pixel-cyan py-3"
-            >
-              {room.status === 'PLAYING' ? (
-                'GAME IN PROGRESS'
-              ) : countdown !== null ? (
-                `STARTING IN ${countdown}...`
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <Play className="w-3.5 h-3.5" /> START GAME
-                </span>
-              )}
-            </Button>
-          </Card>
-        </div>
-
-        {/* Right Column: 800x600 Dark Arcade Arena Canvas + 4 Player Slots */}
-        <div className="flex-1 flex flex-col space-y-4">
-          {/* Arcade Display Frame */}
-          <div className="flex-1 flex items-center justify-center bg-[#09090F] border-4 border-[#29293A] shadow-pixel-lg relative overflow-hidden">
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={600}
-              className="w-full h-full max-w-[800px] max-h-[600px] object-contain border-2 border-[#1A1A28]"
-            />
-
-            {/* Countdown Overlay */}
-            {countdown !== null && (
-              <div className="absolute inset-0 bg-[#09090F]/90 flex items-center justify-center z-20">
-                <div className="text-center space-y-4 animate-bounce">
-                  <p className="text-xl text-[#00E5FF] font-retro">GET READY!</p>
-                  <p className="text-7xl font-black text-[#FFD400] font-retro">{countdown}</p>
-                </div>
+            {/* Small QR Code */}
+            <div className="flex flex-col items-center justify-center py-1 bg-[#1A1A28]/60 border border-[#29293A]">
+              <div className="p-1.5 bg-white border-2 border-[#09090F] shadow-pixel-sm inline-block">
+                <QRCodeSVG
+                  value={controllerUrl}
+                  size={84}
+                  level="M"
+                  includeMargin={false}
+                />
               </div>
-            )}
+              <span className="text-[7px] text-[#00E5FF] font-retro mt-1.5 tracking-wider">
+                SCAN TO JOIN
+              </span>
+            </div>
+          </Card>
+        </div>
+
+        {/* Countdown Overlay */}
+        {countdown !== null && (
+          <div className="absolute inset-0 bg-[#09090F]/85 flex items-center justify-center z-40 backdrop-blur-sm">
+            <div className="text-center space-y-3 animate-bounce">
+              <p className="text-xl text-[#00E5FF] font-retro tracking-widest">GET READY!</p>
+              <p className="text-8xl font-black text-[#FFD400] font-retro drop-shadow-[0_0_20px_#FFD400]">{countdown}</p>
+            </div>
           </div>
+        )}
+      </main>
 
-          {/* 4 Player Slots Status Bar */}
-          <div className="grid grid-cols-4 gap-4">
-            {room.slots.map((slot) => {
-              const player = slot.playerId ? room.players[slot.playerId] : null;
-              const isOccupied = slot.occupied && !!player && player.connected;
+      {/* Full-Width (w-full) Bottom Bar with Retro Pixel Marquee Ticker */}
+      <footer className="absolute bottom-0 left-0 right-0 z-30 h-14 bg-[#11111B] border-t-4 border-[#29293A] shadow-pixel flex items-center px-4 overflow-hidden">
+        {/* Slot Badges Overview (P1 - P4) */}
+        <div className="flex items-center space-x-2 shrink-0 border-r-2 border-[#29293A] pr-4 mr-4">
+          {room.slots.map((slot) => {
+            const player = slot.playerId ? room.players[slot.playerId] : null;
+            const isOccupied = slot.occupied && !!player && player.connected;
+            return (
+              <div
+                key={slot.slotIndex}
+                className="flex items-center space-x-1 px-2 py-1 border-2 text-[9px] font-retro"
+                style={{
+                  borderColor: isOccupied ? slot.color.primary : '#29293A',
+                  backgroundColor: isOccupied ? '#1A1A28' : '#09090F',
+                  color: isOccupied ? slot.color.accent : '#77778D',
+                }}
+              >
+                <span className="font-bold">P{slot.slotIndex + 1}</span>
+                <span
+                  className="w-1.5 h-1.5 rounded-none"
+                  style={{ backgroundColor: isOccupied ? slot.color.primary : '#39394F' }}
+                />
+              </div>
+            );
+          })}
+        </div>
 
-              return (
-                <Card
-                  key={slot.slotIndex}
-                  className={`p-3 relative bg-[#11111B] border-2 border-[#29293A]`}
-                  style={{
-                    boxShadow: isOccupied ? `4px 4px 0px 0px ${slot.color.primary}` : undefined,
-                    borderColor: isOccupied ? slot.color.primary : '#29293A',
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className="text-[10px] font-retro font-bold"
-                      style={{ color: slot.color.accent }}
+        {/* Infinite Retro Pixel Marquee of Player Names & Status in Slot Colors */}
+        <div className="flex-1 overflow-hidden relative h-full flex items-center">
+          <div className="flex items-center space-x-8 whitespace-nowrap animate-marquee">
+            {/* Repeated twice for seamless marquee loop */}
+            {[0, 1].map((copyIndex) => (
+              <div key={copyIndex} className="flex items-center space-x-8">
+                {room.slots.map((slot) => {
+                  const player = slot.playerId ? room.players[slot.playerId] : null;
+                  const isOccupied = slot.occupied && !!player && player.connected;
+                  return (
+                    <div
+                      key={`slot-${slot.slotIndex}-${copyIndex}`}
+                      className="inline-flex items-center space-x-2 font-retro text-[10px]"
                     >
-                      {slot.label}
-                    </span>
-                    <Badge
-                      variant={isOccupied ? 'default' : 'secondary'}
-                      className={`text-[8px] font-retro ${
-                        isOccupied
-                          ? player?.isReady
-                            ? 'bg-[#35E58A] text-[#09090F]'
-                            : 'bg-[#8B35FF] text-white'
-                          : 'bg-[#1A1A28] text-[#77778D]'
-                      }`}
-                    >
-                      {isOccupied ? (player?.isReady ? 'READY' : 'JOINED') : 'EMPTY'}
-                    </Badge>
-                  </div>
-
-                  {isOccupied && player ? (
-                    <div className="space-y-1">
-                      <p className="text-xs font-bold truncate text-[#F7F4E8]">
-                        {player.nickname}
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <div
-                          className="w-2.5 h-2.5 border border-[#09090F]"
-                          style={{ backgroundColor: slot.color.primary }}
-                        />
-                        <span className="text-[9px] text-[#35E58A] font-bold">CONNECTED</span>
-                      </div>
+                      <span
+                        className="px-1.5 py-0.5 border text-[9px] font-bold"
+                        style={{
+                          borderColor: slot.color.primary,
+                          color: slot.color.accent,
+                          backgroundColor: `${slot.color.primary}15`,
+                        }}
+                      >
+                        P{slot.slotIndex + 1}
+                      </span>
+                      {isOccupied && player ? (
+                        <span
+                          className="font-black tracking-wide"
+                          style={{ color: slot.color.primary }}
+                        >
+                          {player.nickname.toUpperCase()}{' '}
+                          <span className="text-[8px] text-[#35E58A] ml-1">
+                            [{player.isReady ? 'READY' : 'JOINED'}]
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-[#77778D] tracking-wider text-[9px]">
+                          EMPTY SLOT • SCAN TO JOIN
+                        </span>
+                      )}
+                      <span className="text-[#39394F] font-mono">◆</span>
                     </div>
-                  ) : (
-                    <div className="py-2 text-center">
-                      <p className="text-[9px] text-[#77778D]">WAITING FOR PLAYER...</p>
-                    </div>
-                  )}
-                </Card>
-              );
-            })}
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
-      </main>
+      </footer>
     </div>
   );
 }

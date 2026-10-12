@@ -68,3 +68,55 @@ html, body, #root {
   color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
+
+/* Pixel Shake on Damage Hit */
+@keyframes shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-3px, 2px); }
+  40% { transform: translate(3px, -2px); }
+  60% { transform: translate(-2px, -3px); }
+  80% { transform: translate(2px, 3px); }
+}
+
+.animate-shake {
+  animation: shake 0.25s ease-in-out infinite;
+}
+
+/* Ambient Pixel Border Bloom Animations */
+@keyframes pixel-bloom-hit {
+  0%, 100% { box-shadow: inset 0 0 0 4px #FF2E55, 0 0 24px 4px #FF2E55; }
+  50% { box-shadow: inset 0 0 0 6px #FF8800, 0 0 36px 8px #FF8800; }
+}
+
+@keyframes pixel-bloom-win {
+  0% { box-shadow: inset 0 0 0 4px #FFD700, 0 0 24px 6px #FFD700; }
+  33% { box-shadow: inset 0 0 0 5px #00FFA3, 0 0 30px 8px #00FFA3; }
+  66% { box-shadow: inset 0 0 0 5px #00E5FF, 0 0 30px 8px #00E5FF; }
+  100% { box-shadow: inset 0 0 0 4px #FFD700, 0 0 24px 6px #FFD700; }
+}
+
+@keyframes pixel-bloom-fail {
+  0%, 100% { box-shadow: inset 0 0 0 4px #E60039, 0 0 20px 4px #E60039; }
+  50% { box-shadow: inset 0 0 0 2px #7A0026, 0 0 10px 2px #7A0026; }
+}
+
+@keyframes pixel-bloom-powerup {
+  0%, 100% { box-shadow: inset 0 0 0 4px #00FFA3, 0 0 25px 5px #00FFA3; }
+  50% { box-shadow: inset 0 0 0 6px #00E5FF, 0 0 35px 8px #00E5FF; }
+}
+
+.animate-pixel-hit {
+  animation: pixel-bloom-hit 0.3s ease-in-out infinite;
+}
+
+.animate-pixel-win {
+  animation: pixel-bloom-win 1.2s ease-in-out infinite;
+}
+
+.animate-pixel-fail {
+  animation: pixel-bloom-fail 0.5s ease-in-out infinite;
+}
+
+.animate-pixel-powerup {
+  animation: pixel-bloom-powerup 0.8s ease-in-out infinite;
+}

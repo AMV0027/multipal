@@ -97,8 +97,9 @@ export class SocketGateway {
 
           const result = this.roomManager.joinRoom(
             payload.code,
-            socket.id,
             payload.nickname,
+            socket.id,
+            payload.avatarId,
             payload.sessionToken
           );
 
@@ -143,7 +144,33 @@ export class SocketGateway {
       socket.on('player:ready', (data: { ready: boolean }) => {
         const result = this.roomManager.setPlayerReady(socket.id, !!data?.ready);
         if (result) {
-          this.io.to(`room:${result.room.id}`).emit('room:updated', result.room);
+          const { room } = result;
+          this.io.to(`room:${room.id}`).emit('room:updated', room);
+
+          // Auto-start check: If all connected players are ready (and >= 1 connected player) and room is in LOBBY
+          const connectedPlayers = Object.values(room.players).filter((p) => p.connected);
+          const allReady = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.isReady);
+
+          if (allReady && room.status === 'LOBBY') {
+            this.roomManager.setRoomStatus(room.id, 'STARTING');
+            this.io.to(`room:${room.id}`).emit('room:updated', room);
+            this.io.to(`room:${room.id}`).emit('game:starting', 3);
+
+            setTimeout(() => {
+              const currentRoom = this.roomManager.getRoomById(room.id);
+              if (!currentRoom || currentRoom.status === 'CLOSED') return;
+
+              this.roomManager.setRoomStatus(room.id, 'PLAYING');
+              this.io.to(`room:${room.id}`).emit('room:updated', currentRoom);
+              this.io.to(`room:${room.id}`).emit('game:started', currentRoom.selectedGameId);
+
+              const session = this.activeSessions.get(room.id);
+              if (session) {
+                session.currentEngine.init(Object.values(currentRoom.players));
+                session.currentEngine.start();
+              }
+            }, 3000);
+          }
         }
       });
 

@@ -15,8 +15,28 @@ async function bootstrap() {
     methods: ['GET', 'POST'],
   });
 
+  const roomManager = new RoomManager();
+
   fastify.get('/health', async () => {
     return { status: 'ok', timestamp: Date.now() };
+  });
+
+  fastify.get('/api/room/:code', async (req, reply) => {
+    const { code } = req.params as { code: string };
+    const room = roomManager.getRoomByCode(code);
+    if (!room) {
+      return reply.code(404).send({ ok: false, error: 'Room not found' });
+    }
+    return {
+      ok: true,
+      room: {
+        id: room.id,
+        code: room.code,
+        selectedGameId: room.selectedGameId,
+        status: room.status,
+        playerCount: Object.values(room.players).filter((p) => p.connected).length,
+      },
+    };
   });
 
   // Candidate paths whether run from repo root or server workspace directory
@@ -86,7 +106,6 @@ async function bootstrap() {
     transports: ['websocket', 'polling'],
   });
 
-  const roomManager = new RoomManager();
   new SocketGateway(io, roomManager);
 
   await fastify.listen({ port: PORT, host: HOST });

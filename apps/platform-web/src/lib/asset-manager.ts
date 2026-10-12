@@ -112,15 +112,53 @@ class AssetManager {
       };
     }
 
-    // Audio SFX Preload
+    // Complete Audio SFX Preload across all 3 games and Common UI
     const sfxList: Record<string, string> = {
+      // 1. ZOMBIE SURVIVAL SFX
       'gunshot': '/assets/games/zombie-survival/audio/gunshot.ogg',
+      'machinegun': '/assets/games/zombie-survival/audio/machinegun.ogg',
+      'shotgun': '/assets/games/zombie-survival/audio/shotgun.ogg',
+      'player_hurt': '/assets/games/zombie-survival/audio/player_hurt.ogg',
+      'reload': '/assets/games/zombie-survival/audio/reload.ogg',
+      'upgrade_pickup': '/assets/games/zombie-survival/audio/upgrade_pickup.ogg',
+      'wave_clear': '/assets/games/zombie-survival/audio/wave_clear.ogg',
+      'wave_start': '/assets/games/zombie-survival/audio/wave_start.ogg',
       'zombie_groan': '/assets/games/zombie-survival/audio/zombie_groan.ogg',
+      'zombie_hit': '/assets/games/zombie-survival/audio/zombie_hit.ogg',
+      'zombie_spit': '/assets/games/zombie-survival/audio/zombie_spit.ogg',
+
+      // 2. PLATFORM FIGHTER SFX
+      'announcer_ready': '/assets/games/platform-fighter/audio/announcer_ready.ogg',
+      'announcer_fight': '/assets/games/platform-fighter/audio/announcer_fight.ogg',
       'slash_light': '/assets/games/platform-fighter/audio/slash_light.ogg',
       'impact_heavy': '/assets/games/platform-fighter/audio/impact_heavy.ogg',
       'jump': '/assets/games/platform-fighter/audio/jump.ogg',
+      'double_jump': '/assets/games/platform-fighter/audio/double_jump.ogg',
+      'whoosh_launch': '/assets/games/platform-fighter/audio/whoosh_launch.ogg',
+      'ko_blast': '/assets/games/platform-fighter/audio/ko_blast.ogg',
+      'announcer_ko': '/assets/games/platform-fighter/audio/announcer_ko.ogg',
+      'announcer_winner': '/assets/games/platform-fighter/audio/announcer_winner.ogg',
+      'announcer_sudden_death': '/assets/games/platform-fighter/audio/announcer_sudden_death.ogg',
+
+      // 3. SPLIT-SCREEN RACING SFX
+      'engine_accel': '/assets/games/racing/audio/engine_accel.ogg',
+      'engine_loop': '/assets/games/racing/audio/engine_loop.ogg',
       'tire_screech': '/assets/games/racing/audio/tire_screech.ogg',
+      'car_crash': '/assets/games/racing/audio/car_crash.ogg',
       'checkpoint': '/assets/games/racing/audio/checkpoint_chime.ogg',
+      'lap_flag': '/assets/games/racing/audio/lap_flag.ogg',
+      'finish_horn': '/assets/games/racing/audio/finish_horn.ogg',
+      'finish_fanfare': '/assets/games/racing/audio/finish_fanfare.ogg',
+
+      // 4. COMMON UI SFX
+      'click': '/assets/common/audio/click.ogg',
+      'confirm': '/assets/common/audio/confirm.ogg',
+      'countdown_1': '/assets/common/audio/countdown_1.ogg',
+      'countdown_2': '/assets/common/audio/countdown_2.ogg',
+      'countdown_3': '/assets/common/audio/countdown_3.ogg',
+      'countdown_go': '/assets/common/audio/countdown_go.ogg',
+      'game_over': '/assets/common/audio/game_over_jingle.ogg',
+      'victory': '/assets/common/audio/victory_jingle.ogg',
     };
 
     for (const [key, path] of Object.entries(sfxList)) {

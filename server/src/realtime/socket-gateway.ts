@@ -1,7 +1,10 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { RoomManager } from '../rooms/room-manager';
 import { TestArenaEngine } from '../games/test-arena-engine';
-import { GameTicker } from '@multipal/game-runtime';
+import { ZombieSurvivalEngine } from '../games/zombie-survival-engine';
+import { PlatformFighterEngine } from '../games/platform-fighter-engine';
+import { SplitScreenRacingEngine } from '../games/racing-engine';
+import { GameTicker, IGameServerEngine } from '@multipal/game-runtime';
 import {
   ControllerInputPayload,
   GameId,
@@ -11,7 +14,7 @@ import {
 
 interface ActiveRoomSession {
   room: Room;
-  testEngine: TestArenaEngine;
+  currentEngine: IGameServerEngine<ControllerInputPayload, any>;
   ticker: GameTicker;
 }
 
@@ -25,6 +28,30 @@ export class SocketGateway {
     this.setupSocketHandlers();
   }
 
+  private createEngineForGame(
+    gameId: GameId,
+    room: Room
+  ): IGameServerEngine<ControllerInputPayload, any> {
+    const config = {
+      roomId: room.id,
+      onSnapshot: () => {},
+      onEvent: () => {},
+      onGameEnd: () => {},
+    };
+
+    switch (gameId) {
+      case 'zombie-survival':
+        return new ZombieSurvivalEngine(config);
+      case 'platform-fighter':
+        return new PlatformFighterEngine(config);
+      case 'racing':
+        return new SplitScreenRacingEngine(config);
+      case 'test-arena':
+      default:
+        return new TestArenaEngine(config);
+    }
+  }
+
   private setupSocketHandlers(): void {
     this.io.on('connection', (socket: Socket) => {
       // 1. Host creates a room
@@ -34,22 +61,21 @@ export class SocketGateway {
           const socketRoomName = `room:${room.id}`;
           socket.join(socketRoomName);
 
-          // Setup test arena engine for immediate live input verification
-          const testEngine = new TestArenaEngine({
-            roomId: room.id,
-            onSnapshot: () => {},
-            onEvent: () => {},
-            onGameEnd: () => {},
-          });
+          const engine = this.createEngineForGame(room.selectedGameId, room);
+          engine.init(Object.values(room.players));
 
           // Run tick loop at 30Hz
           const ticker = new GameTicker(30, (dt) => {
-            const { snapshot } = testEngine.tick(dt);
-            this.io.to(socketRoomName).emit('game:state_snapshot', snapshot);
+            const result = engine.tick(dt);
+            this.io.to(socketRoomName).emit('game:state_snapshot', result.snapshot);
           });
           ticker.start();
 
-          this.activeSessions.set(room.id, { room, testEngine, ticker });
+          this.activeSessions.set(room.id, {
+            room,
+            currentEngine: engine,
+            ticker,
+          });
 
           if (typeof ack === 'function') {
             ack({ ok: true, room });
@@ -61,21 +87,18 @@ export class SocketGateway {
         }
       });
 
-      // 2. Mobile player joins a room
+      // 2. Player joins room from phone
       socket.on('room:join', (payload: JoinRoomPayload, ack) => {
         try {
-          if (!payload || !payload.code) {
-            if (typeof ack === 'function') {
-              ack({ ok: false, error: 'Room code is required' });
-            }
+          if (!payload?.code) {
+            if (typeof ack === 'function') ack({ ok: false, error: 'Room code is required' });
             return;
           }
 
           const result = this.roomManager.joinRoom(
             payload.code,
-            payload.nickname || '',
             socket.id,
-            payload.avatarId || 'default',
+            payload.nickname,
             payload.sessionToken
           );
 
@@ -90,10 +113,12 @@ export class SocketGateway {
           const socketRoomName = `room:${room.id}`;
           socket.join(socketRoomName);
 
-          // Add player to active test engine
+          // Add player to active game engine
           const session = this.activeSessions.get(room.id);
           if (session) {
-            session.testEngine.addPlayer(player);
+            if ('addPlayer' in session.currentEngine) {
+              (session.currentEngine as any).addPlayer(player);
+            }
           }
 
           // Broadcast room update to everyone (host and players)
@@ -129,7 +154,7 @@ export class SocketGateway {
 
         const session = this.activeSessions.get(data.room.id);
         if (session) {
-          session.testEngine.processInput(data.player.id, input);
+          session.currentEngine.processInput(data.player.id, input);
         }
       });
 
@@ -139,6 +164,25 @@ export class SocketGateway {
         if (!room) return;
 
         this.roomManager.setSelectedGame(room.id, data.gameId);
+
+        // Switch live engine in session if exists
+        const session = this.activeSessions.get(room.id);
+        if (session) {
+          session.ticker.stop();
+          session.currentEngine.destroy();
+
+          const newEngine = this.createEngineForGame(data.gameId, room);
+          newEngine.init(Object.values(room.players));
+          session.currentEngine = newEngine;
+
+          const socketRoomName = `room:${room.id}`;
+          session.ticker = new GameTicker(30, (dt) => {
+            const result = newEngine.tick(dt);
+            this.io.to(socketRoomName).emit('game:state_snapshot', result.snapshot);
+          });
+          session.ticker.start();
+        }
+
         this.io.to(`room:${room.id}`).emit('room:updated', room);
       });
 
@@ -155,6 +199,12 @@ export class SocketGateway {
           this.roomManager.setRoomStatus(room.id, 'PLAYING');
           this.io.to(`room:${room.id}`).emit('room:updated', room);
           this.io.to(`room:${room.id}`).emit('game:started', room.selectedGameId);
+
+          const session = this.activeSessions.get(room.id);
+          if (session) {
+            session.currentEngine.init(Object.values(room.players));
+            session.currentEngine.start();
+          }
         }, 3000);
       });
 
@@ -173,7 +223,7 @@ export class SocketGateway {
           const session = this.activeSessions.get(closedRoom.id);
           if (session) {
             session.ticker.stop();
-            session.testEngine.destroy();
+            session.currentEngine.destroy();
             this.activeSessions.delete(closedRoom.id);
           }
           this.io.to(`room:${closedRoom.id}`).emit('room:closed', 'Host has disconnected.');

@@ -2,32 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Backgrounds */
+  --bg-primary: #09090F;
+  --bg-secondary: #11111B;
+  --bg-tertiary: #1A1A28;
+  --bg-elevated: #222235;
+
+  /* Brand colors */
+  --brand-orange: #FF6B00;
+  --brand-yellow: #FFD400;
+  --brand-pink: #FF2E88;
+  --brand-magenta: #D91FFF;
+  --brand-purple: #8B35FF;
+  --brand-blue: #245BFF;
+  --brand-cyan: #00E5FF;
+
+  /* Text */
+  --text-primary: #F7F4E8;
+  --text-secondary: #B7B6C9;
+  --text-muted: #77778D;
+  --text-inverse: #09090F;
+
+  /* Borders */
+  --border-subtle: #29293A;
+  --border-default: #39394F;
+  --border-active: #8B35FF;
+
+  /* Semantic colors */
+  --success: #35E58A;
+  --warning: #FFD400;
+  --error: #FF4268;
+  --info: #00CFFF;
+
+  /* Game-specific identities */
+  --zombie-primary: #FF4268;
+  --zombie-secondary: #35E58A;
+  --zombie-accent: #FF6B00;
+
+  --fighter-primary: #D91FFF;
+  --fighter-secondary: #00E5FF;
+  --fighter-accent: #FFD400;
+
+  --racing-primary: #FF6B00;
+  --racing-secondary: #245BFF;
+  --racing-accent: #00E5FF;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(120deg, #FF6B00 0%, #FF2E88 30%, #8B35FF 65%, #00E5FF 100%);
+  --gradient-action: linear-gradient(135deg, #8B35FF, #245BFF);
+  --gradient-cyan: linear-gradient(135deg, #00E5FF, #245BFF);
+}
+
 html, body, #root {
   width: 100%;
   height: 100%;
   margin: 0;
   padding: 0;
-}
-
-@layer base {
-  :root {
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-  .dark {
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }

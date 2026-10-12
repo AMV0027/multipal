@@ -33,7 +33,7 @@ describe('TestArenaEngine', () => {
     const p1 = snapshot.entities[0];
     expect(p1.playerId).toBe('p1');
     expect(p1.slotIndex).toBe(0);
-    expect(p1.color).toBe('#3B82F6'); // Slot 1 Blue
+    expect(p1.color).toBe('#245BFF'); // Slot 1 Arcade Blue
     expect(p1.x).toBe(200);
     expect(p1.y).toBe(200);
   });

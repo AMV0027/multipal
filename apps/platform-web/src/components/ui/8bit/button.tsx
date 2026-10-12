@@ -1,5 +1,5 @@
 import { type VariantProps, cva } from "class-variance-authority";
-import { Slot } from "radix-ui";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import type { ButtonHTMLAttributes, Ref } from "react";
 
 import { Button as ShadcnButton } from "@/components/ui/button";
@@ -118,7 +118,7 @@ function Button({
       variant={variant}
       asChild={asChild}
     >
-      {asChild ? <Slot.Slottable>{children}</Slot.Slottable> : children}
+      {asChild ? <Slottable>{children}</Slottable> : children}
       {decorations}
     </ShadcnButton>
   );

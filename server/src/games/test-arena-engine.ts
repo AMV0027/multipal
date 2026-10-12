@@ -144,6 +144,7 @@ export class TestArenaEngine implements IGameServerEngine<ControllerInputPayload
     }
 
     const snapshot: TestArenaSnapshot = {
+      gameId: 'test-arena',
       tick: this.tickCount,
       timestamp: Date.now(),
       entities: entityStates,

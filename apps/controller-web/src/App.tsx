@@ -5,12 +5,22 @@ import {
   Room,
   ControllerInputPayload,
   JoinRoomResponse,
+  ControllerButton,
 } from '@multipal/shared-types';
 import { VirtualJoystick } from './components/VirtualJoystick';
 import { Button, Card, Badge, Input } from './components/ui/8bit';
-import { Gamepad2, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+const isDedicatedDevPort =
+  typeof window !== 'undefined' &&
+  (window.location.port === '5200' || window.location.port === '5201');
+const SERVER_URL =
+  import.meta.env.VITE_SERVER_URL ||
+  (isDedicatedDevPort
+    ? `http://${window.location.hostname}:3001`
+    : typeof window !== 'undefined'
+    ? window.location.origin
+    : '');
 
 export default function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -23,6 +33,7 @@ export default function App() {
   const [isReady, setIsReady] = useState(false);
 
   const inputVectorRef = useRef<[number, number]>([0, 0]);
+  const aimVectorRef = useRef<[number, number]>([1, 0]);
   const buttonsMaskRef = useRef<number>(0);
   const seqRef = useRef<number>(0);
 
@@ -99,8 +110,10 @@ export default function App() {
         seq: seqRef.current,
         timestamp: Date.now(),
         vector: inputVectorRef.current,
+        aimVector: aimVectorRef.current,
         buttons: buttonsMaskRef.current,
       };
+
       socket.emit('player:input', payload);
     }, 1000 / 30);
 
@@ -109,10 +122,10 @@ export default function App() {
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!socket || !roomCode.trim()) return;
+    if (!socket || !connected) return;
 
     const cleanCode = roomCode.trim().toUpperCase();
-    const cleanNick = nickname.trim().toUpperCase() || 'PLAYER';
+    const cleanNick = nickname.trim().toUpperCase() || 'HERO';
 
     localStorage.setItem('multipal_nickname', cleanNick);
     setErrorMsg(null);
@@ -140,6 +153,10 @@ export default function App() {
     inputVectorRef.current = vector;
   }, []);
 
+  const handleAimJoystickChange = useCallback((vector: [number, number]) => {
+    aimVectorRef.current = vector;
+  }, []);
+
   const handleButtonPress = (buttonBit: number, isPressed: boolean) => {
     if (isPressed) {
       buttonsMaskRef.current |= buttonBit;
@@ -158,32 +175,36 @@ export default function App() {
     socket.emit('player:ready', { ready: nextState });
   };
 
+  const activeGame = room?.selectedGameId || 'zombie-survival';
+
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#0D0E15] text-slate-100 overflow-hidden font-retro select-none touch-none">
+    <div className="flex flex-col h-screen w-screen bg-[#09090F] text-[#F7F4E8] overflow-hidden select-none touch-none">
       {!player ? (
-        /* 8-bit Join Room Form */
+        /* Dark Arcade Join Room Form */
         <div className="flex-1 flex flex-col justify-center px-4 max-w-sm mx-auto w-full">
-          <Card className="space-y-4">
+          <Card className="p-6 bg-[#11111B] border-4 border-[#29293A] shadow-pixel-purple space-y-5">
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 bg-[#2563EB] border-4 border-black shadow-pixel text-white mx-auto flex items-center justify-center mb-2">
-                <Gamepad2 className="w-6 h-6" />
-              </div>
-              <h2 className="text-sm font-black text-[#FACC15] tracking-widest">
+              <img
+                src="/controller/multipal_logo.png"
+                alt="MultiPal Logo"
+                className="w-16 h-16 object-contain pixelated border-4 border-[#39394F] bg-[#09090F] p-1 shadow-pixel mx-auto mb-2"
+              />
+              <h2 className="text-sm font-black text-[#F7F4E8] font-retro tracking-widest">
                 JOIN GAME
               </h2>
-              <p className="text-[9px] text-slate-400">8-BIT CONTROLLER</p>
+              <p className="text-[10px] text-[#B7B6C9]">8-BIT MOBILE CONTROLLER</p>
             </div>
 
             {errorMsg && (
-              <div className="p-2.5 bg-[#DC2626] border-2 border-black text-white text-[9px] flex items-center space-x-2">
+              <div className="p-2.5 bg-[#FF4268]/20 border-2 border-[#FF4268] text-[#FF4268] text-[10px] font-bold flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            <form onSubmit={handleJoin} className="space-y-3">
+            <form onSubmit={handleJoin} className="space-y-4">
               <div>
-                <label className="block text-[9px] text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] text-[#B7B6C9] font-bold uppercase tracking-wider mb-1">
                   ROOM CODE
                 </label>
                 <Input
@@ -192,13 +213,13 @@ export default function App() {
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                   placeholder="K9X2"
-                  className="w-full text-center text-xl font-black text-[#FACC15] tracking-widest"
+                  className="w-full text-center text-xl font-black text-[#00E5FF] bg-[#1A1A28] border-2 border-[#39394F] focus:border-[#8B35FF] font-retro tracking-widest"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-[9px] text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] text-[#B7B6C9] font-bold uppercase tracking-wider mb-1">
                   NICKNAME
                 </label>
                 <Input
@@ -207,139 +228,325 @@ export default function App() {
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   placeholder="HERO"
-                  className="w-full text-center text-xs"
+                  className="w-full text-center text-xs font-bold text-[#F7F4E8] bg-[#1A1A28] border-2 border-[#39394F] focus:border-[#8B35FF]"
                   required
                 />
               </div>
 
               <Button
                 type="submit"
-                variant="warning"
-                size="md"
+                variant="default"
+                size="default"
                 disabled={!connected || !roomCode.trim()}
-                className="w-full text-xs font-black"
+                className="w-full text-xs font-black bg-[#8B35FF] text-[#F7F4E8] hover:bg-[#7222E5] border-2 border-[#09090F] shadow-pixel-cyan font-retro py-3"
               >
                 ★ JOIN GAME ★
               </Button>
             </form>
 
-            <div className="text-center pt-2 border-t-2 border-black">
-              <Badge variant={connected ? 'green' : 'red'}>
-                {connected ? '● READY' : '○ CONNECTING...'}
+            <div className="text-center pt-2 border-t-2 border-[#29293A]">
+              <Badge variant={connected ? 'default' : 'destructive'} className="text-[9px]">
+                {connected ? '● READY TO CONNECT' : '○ CONNECTING...'}
               </Badge>
             </div>
           </Card>
         </div>
       ) : (
-        /* Connected 8-Bit Arcade Gamepad */
-        <div className="flex-1 flex flex-col justify-between p-3 overflow-hidden">
+        /* Connected Dark Arcade Gamepad */
+        <div className="flex-1 flex flex-col justify-between p-3 overflow-hidden bg-[#09090F]">
           {/* Header */}
-          <header className="flex items-center justify-between pb-2 border-b-4 border-black">
-            <div className="flex items-center space-x-2">
+          <header className="flex items-center justify-between pb-2 border-b-4 border-[#29293A] bg-[#11111B] p-2.5 shadow-pixel-sm">
+            <div className="flex items-center space-x-2.5">
+              <img
+                src="/controller/multipal_logo.png"
+                alt="Logo"
+                className="w-7 h-7 object-contain pixelated border-2 border-[#39394F] bg-[#09090F] p-0.5"
+              />
               <div
-                className="w-7 h-7 border-2 border-black shadow-pixel-sm flex items-center justify-center font-black text-[10px] text-white"
+                className="w-7 h-7 border-2 border-[#09090F] shadow-pixel-sm flex items-center justify-center font-black text-[10px] text-white font-retro"
                 style={{
                   backgroundColor:
-                    room?.slots[player.slotIndex]?.color.primary || '#3B82F6',
+                    room?.slots[player.slotIndex]?.color.primary || '#245BFF',
                 }}
               >
                 P{player.slotIndex + 1}
               </div>
               <div>
-                <p className="text-[11px] font-black text-[#FACC15] leading-tight">
+                <p className="text-[12px] font-bold text-[#F7F4E8] leading-tight">
                   {player.nickname}
                 </p>
-                <p className="text-[8px] text-slate-400">
-                  ROOM: {room?.code}
+                <p className="text-[9px] text-[#B7B6C9] font-retro">
+                  ROOM: <span className="text-[#00E5FF]">{room?.code}</span> • {activeGame.toUpperCase()}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
               <Button
-                variant={isReady ? 'success' : 'secondary'}
+                variant={isReady ? 'default' : 'secondary'}
                 size="sm"
                 onClick={toggleReady}
+                className={`text-[9px] font-retro ${
+                  isReady ? 'bg-[#35E58A] text-[#09090F] border-2 border-[#09090F]' : 'bg-[#1A1A28] text-[#F7F4E8] border border-[#39394F]'
+                }`}
               >
                 {isReady ? 'READY' : 'NOT READY'}
               </Button>
 
               <span
-                className={`w-2.5 h-2.5 border border-black ${
-                  connected ? 'bg-emerald-400' : 'bg-rose-400'
+                className={`w-2.5 h-2.5 border border-[#09090F] ${
+                  connected ? 'bg-[#35E58A]' : 'bg-[#FF4268]'
                 }`}
               />
             </div>
           </header>
 
-          {/* Gamepad Controls */}
-          <div className="flex-1 flex items-center justify-between px-2 sm:px-6 py-2 gap-4">
-            {/* Left Hand: 8-Bit Virtual Joystick */}
-            <div className="flex flex-col items-center">
-              <VirtualJoystick
-                size={150}
-                knobSize={58}
-                onChange={handleJoystickChange}
-                color={
-                  room?.slots[player.slotIndex]?.color.primary || '#3B82F6'
-                }
-              />
-              <span className="text-[8px] text-slate-500 uppercase tracking-widest mt-2">
-                MOVE
-              </span>
-            </div>
+          {/* Dynamic Controller Layouts */}
+          {activeGame === 'zombie-survival' && (
+            /* Twin-Stick Zombie Controls (Red, Green, Orange Accents) */
+            <div className="flex-1 flex items-center justify-between px-2 sm:px-6 py-2 gap-4">
+              {/* Left: Movement Stick */}
+              <div className="flex flex-col items-center">
+                <VirtualJoystick
+                  size={140}
+                  knobSize={54}
+                  onChange={handleJoystickChange}
+                  color={room?.slots[player.slotIndex]?.color.primary || '#245BFF'}
+                />
+                <span className="text-[9px] text-[#B7B6C9] font-bold uppercase tracking-widest mt-2 font-retro">
+                  MOVE
+                </span>
+              </div>
 
-            {/* Right Hand: 8-Bit Arcade Buttons */}
-            <div className="flex items-center space-x-4">
-              {/* Button B: Pulse / Jump */}
-              <div className="flex flex-col items-center space-y-1">
+              {/* Center Action: Nuke / Bomb (Orange Accent) */}
+              <div className="flex flex-col items-center space-y-2">
                 <button
                   onPointerDown={(e) => {
                     e.preventDefault();
-                    handleButtonPress(2, true);
+                    handleButtonPress(ControllerButton.B, true);
                   }}
                   onPointerUp={(e) => {
                     e.preventDefault();
-                    handleButtonPress(2, false);
+                    handleButtonPress(ControllerButton.B, false);
                   }}
                   onPointerCancel={(e) => {
                     e.preventDefault();
-                    handleButtonPress(2, false);
+                    handleButtonPress(ControllerButton.B, false);
                   }}
-                  className="w-18 h-18 sm:w-20 sm:h-20 bg-[#FACC15] active:bg-[#CA8A04] border-4 border-black shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-2xl text-black transition-transform select-none touch-none cursor-pointer"
+                  className="w-14 h-14 bg-[#FF6B00] active:bg-[#D95500] border-4 border-[#09090F] shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-xs text-[#09090F] font-retro select-none touch-none cursor-pointer"
+                >
+                  NUKE
+                </button>
+                <span className="text-[8px] text-[#FFD400] font-retro font-bold">500 PTS</span>
+              </div>
+
+              {/* Right: Aiming Stick / Fire Trigger (Danger Red Accent) */}
+              <div className="flex flex-col items-center">
+                <VirtualJoystick
+                  size={140}
+                  knobSize={54}
+                  onChange={handleAimJoystickChange}
+                  color="#FF4268"
+                />
+                <span className="text-[9px] text-[#FF4268] font-bold uppercase tracking-widest mt-2 font-retro">
+                  AIM & FIRE
+                </span>
+              </div>
+            </div>
+          )}
+
+          {activeGame === 'platform-fighter' && (
+            /* Platform Fighter Controls (Magenta, Cyan, Yellow Accents) */
+            <div className="flex-1 flex items-center justify-between px-2 sm:px-6 py-2 gap-4">
+              {/* Left: Horizontal Move / Jump Stick */}
+              <div className="flex flex-col items-center">
+                <VirtualJoystick
+                  size={140}
+                  knobSize={54}
+                  onChange={handleJoystickChange}
+                  color={room?.slots[player.slotIndex]?.color.primary || '#245BFF'}
+                />
+                <span className="text-[9px] text-[#B7B6C9] font-bold uppercase tracking-widest mt-2 font-retro">
+                  MOVE
+                </span>
+              </div>
+
+              {/* Right: Arcade Fighter Buttons */}
+              <div className="grid grid-cols-2 gap-3 items-center">
+                {/* Button A: Jump (Cyan) */}
+                <button
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.A, true);
+                  }}
+                  onPointerUp={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.A, false);
+                  }}
+                  onPointerCancel={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.A, false);
+                  }}
+                  className="w-16 h-16 bg-[#00E5FF] active:bg-[#00B4D8] border-4 border-[#09090F] shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-xs text-[#09090F] font-retro select-none touch-none cursor-pointer"
+                >
+                  JUMP
+                </button>
+
+                {/* Button B: Light Attack (Yellow) */}
+                <button
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.B, true);
+                  }}
+                  onPointerUp={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.B, false);
+                  }}
+                  onPointerCancel={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.B, false);
+                  }}
+                  className="w-16 h-16 bg-[#FFD400] active:bg-[#D4AF37] border-4 border-[#09090F] shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-xs text-[#09090F] font-retro select-none touch-none cursor-pointer"
+                >
+                  LIGHT
+                </button>
+
+                {/* Button C: Heavy Smash (Magenta) */}
+                <button
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.C, true);
+                  }}
+                  onPointerUp={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.C, false);
+                  }}
+                  onPointerCancel={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.C, false);
+                  }}
+                  className="w-16 h-16 bg-[#D91FFF] active:bg-[#B317D4] border-4 border-[#09090F] shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-xs text-white font-retro select-none touch-none cursor-pointer col-span-2 mx-auto"
+                >
+                  SMASH
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeGame === 'racing' && (
+            /* Split-Screen Racing Controls (Orange, Blue, Cyan Accents) */
+            <div className="flex-1 flex items-center justify-between px-2 sm:px-6 py-2 gap-4">
+              {/* Left: Steering Stick */}
+              <div className="flex flex-col items-center">
+                <VirtualJoystick
+                  size={140}
+                  knobSize={54}
+                  onChange={handleJoystickChange}
+                  color="#00E5FF"
+                />
+                <span className="text-[9px] text-[#00E5FF] font-bold uppercase tracking-widest mt-2 font-retro">
+                  STEER
+                </span>
+              </div>
+
+              {/* Right: Pedals */}
+              <div className="flex items-center space-x-4">
+                {/* Brake / Reverse (Orange Accent) */}
+                <div className="flex flex-col items-center space-y-1">
+                  <button
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      handleButtonPress(ControllerButton.B, true);
+                    }}
+                    onPointerUp={(e) => {
+                      e.preventDefault();
+                      handleButtonPress(ControllerButton.B, false);
+                    }}
+                    onPointerCancel={(e) => {
+                      e.preventDefault();
+                      handleButtonPress(ControllerButton.B, false);
+                    }}
+                    className="w-16 h-20 bg-[#FF6B00] active:bg-[#D95500] border-4 border-[#09090F] shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-xs text-[#09090F] font-retro select-none touch-none cursor-pointer"
+                  >
+                    BRAKE
+                  </button>
+                  <span className="text-[8px] text-[#B7B6C9] font-bold">REVERSE</span>
+                </div>
+
+                {/* Gas / Accelerate (Blue Accent) */}
+                <div className="flex flex-col items-center space-y-1">
+                  <button
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      handleButtonPress(ControllerButton.A, true);
+                    }}
+                    onPointerUp={(e) => {
+                      e.preventDefault();
+                      handleButtonPress(ControllerButton.A, false);
+                    }}
+                    onPointerCancel={(e) => {
+                      e.preventDefault();
+                      handleButtonPress(ControllerButton.A, false);
+                    }}
+                    className="w-20 h-24 bg-[#245BFF] active:bg-[#1A45C7] border-4 border-[#09090F] shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-sm text-[#F7F4E8] font-retro select-none touch-none cursor-pointer"
+                  >
+                    GAS
+                  </button>
+                  <span className="text-[8px] text-[#00E5FF] font-bold">DRIVE</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeGame === 'test-arena' && (
+            /* Test Arena Pad */
+            <div className="flex-1 flex items-center justify-between px-2 sm:px-6 py-2 gap-4">
+              <div className="flex flex-col items-center">
+                <VirtualJoystick
+                  size={140}
+                  knobSize={54}
+                  onChange={handleJoystickChange}
+                  color={room?.slots[player.slotIndex]?.color.primary || '#245BFF'}
+                />
+                <span className="text-[9px] text-[#B7B6C9] font-bold uppercase tracking-widest mt-2 font-retro">
+                  MOVE
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <button
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.B, true);
+                  }}
+                  onPointerUp={(e) => {
+                    e.preventDefault();
+                    handleButtonPress(ControllerButton.B, false);
+                  }}
+                  className="w-18 h-18 bg-[#FFD400] active:bg-[#D4AF37] border-4 border-[#09090F] shadow-pixel flex items-center justify-center font-black text-2xl text-[#09090F] font-retro select-none touch-none cursor-pointer"
                 >
                   B
                 </button>
-                <span className="text-[8px] text-slate-500 uppercase">PULSE</span>
-              </div>
-
-              {/* Button A: Action / Dash / Fire */}
-              <div className="flex flex-col items-center space-y-1">
                 <button
                   onPointerDown={(e) => {
                     e.preventDefault();
-                    handleButtonPress(1, true);
+                    handleButtonPress(ControllerButton.A, true);
                   }}
                   onPointerUp={(e) => {
                     e.preventDefault();
-                    handleButtonPress(1, false);
+                    handleButtonPress(ControllerButton.A, false);
                   }}
-                  onPointerCancel={(e) => {
-                    e.preventDefault();
-                    handleButtonPress(1, false);
-                  }}
-                  className="w-20 h-20 sm:w-22 sm:h-22 bg-[#EF4444] active:bg-[#B91C1C] border-4 border-black shadow-pixel active:translate-x-1 active:translate-y-1 active:shadow-none flex items-center justify-center font-black text-3xl text-white transition-transform select-none touch-none cursor-pointer"
+                  className="w-20 h-20 bg-[#8B35FF] active:bg-[#7222E5] border-4 border-[#09090F] shadow-pixel flex items-center justify-center font-black text-3xl text-[#F7F4E8] font-retro select-none touch-none cursor-pointer"
                 >
                   A
                 </button>
-                <span className="text-[8px] text-slate-500 uppercase">ACTION</span>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Footer */}
-          <footer className="text-center text-[8px] text-slate-600 py-0.5">
-            MULTIP<span className="text-[#FACC15]">AL</span> 8-BIT CONTROLLER
+          <footer className="text-center text-[9px] text-[#77778D] py-1 border-t border-[#29293A]">
+            MULTIPAl ARCADE • 30HZ FIXED SIMULATION
           </footer>
         </div>
       )}

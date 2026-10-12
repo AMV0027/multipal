@@ -105,7 +105,7 @@ function TableCaption({
   className,
   ...props
 }: React.ComponentProps<"caption">) {
-  return <ShadcnTableCaption className={cn(className)} {...props} />;
+  return <ShadcnTableCaption className={cn(className)} {...(props as any)} />;
 }
 
 export {

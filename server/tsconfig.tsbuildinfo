@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/games/test-arena-engine.ts","./src/realtime/socket-gateway.ts","./src/rooms/room-manager.ts"],"version":"5.9.3"}
+{"root":["./src/index.ts","./src/games/platform-fighter-engine.ts","./src/games/racing-engine.ts","./src/games/test-arena-engine.ts","./src/games/zombie-survival-engine.ts","./src/realtime/socket-gateway.ts","./src/rooms/room-manager.ts"],"version":"5.9.3"}

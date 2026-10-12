@@ -23,7 +23,7 @@ export const badgeVariants = cva("", {
 });
 
 export interface BitButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {
   asChild?: boolean;
 }

@@ -85,7 +85,7 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
         height: size,
         touchAction: 'none',
       }}
-      className="relative bg-[#181926] border-4 border-black shadow-pixel-lg flex items-center justify-center cursor-pointer select-none font-retro"
+      className="relative bg-[#11111B] border-4 border-[#29293A] shadow-pixel-lg flex items-center justify-center cursor-pointer select-none font-retro"
     >
       {/* 4 Direction Pixel Indicators */}
       <span className="absolute top-1 text-[10px] text-slate-500 pointer-events-none">▲</span>

@@ -6,13 +6,14 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "tsx watch src/index.ts",
-    "start": "node dist/index.js",
+    "start": "tsx src/index.ts",
     "test": "vitest run"
   },
   "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@fastify/static": "^10.1.6",
     "@multipal/game-runtime": "workspace:*",
     "@multipal/shared-types": "workspace:*",
-    "@fastify/cors": "^10.0.2",
     "fastify": "^5.2.1",
     "nanoid": "^5.1.3",
     "socket.io": "^4.8.1"

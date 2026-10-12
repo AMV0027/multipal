@@ -8,7 +8,9 @@
     "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "next/link": ["./src/lib/next-compat.tsx"],
+      "next/navigation": ["./src/lib/next-compat.tsx"]
     }
   },
   "include": ["src"]
